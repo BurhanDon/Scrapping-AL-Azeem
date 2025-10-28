@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Salt Blogs</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      h1 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 30px;
+      }
+
+      /* --- NEW: Stats Container --- */
+      #stats-container {
+        max-width: 1200px;
+        margin: 0 auto 30px auto;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        border-left: 5px solid #00796b;
+      }
+      #stats-container h2 {
+        margin-top: 0;
+        color: #333;
+      }
+      #stats-container p {
+        font-size: 16px;
+        color: #555;
+        margin: 8px 0;
+      }
+      #stats-container ul {
+        padding-left: 20px;
+        list-style-type: disc;
+        column-count: 3; /* Arrange categories in columns */
+      }
+      #stats-container li {
+        margin-bottom: 5px;
+      }
+      /* --- End Stats --- */
+
+      .blog-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      .blog-card {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: transform 0.2s;
+      }
+      .blog-card:hover {
+        transform: translateY(-5px);
+      }
+      .blog-image {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+      }
+      .blog-content {
+        padding: 15px;
+      }
+      .blog-title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 10px;
+        color: #333;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .blog-type {
+        display: inline-block;
+        padding: 4px 8px;
+        background-color: #e0f2f1;
+        color: #00796b;
+        border-radius: 4px;
+        font-size: 12px;
+        margin-bottom: 10px;
+        text-transform: capitalize;
+        margin-right: 5px;
+      }
+      /* --- NEW: Category Tag Style --- */
+      .blog-category {
+        display: inline-block;
+        padding: 4px 8px;
+        background-color: #f3e5f5;
+        color: #6a1b9a;
+        border-radius: 4px;
+        font-size: 12px;
+        margin-bottom: 10px;
+        text-transform: capitalize;
+      }
+      .blog-link {
+        color: #0066cc;
+        text-decoration: none;
+        font-size: 14px;
+      }
+      .blog-link:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>Salt Blogs and Products</h1>
+
+    <div id="stats-container">
+      <h2>Loading Stats...</h2>
+    </div>
+
+    <div class="blog-grid"></div>
+
+    <script>
+      // Run after DOM loads
+      window.addEventListener("DOMContentLoaded", () => {
+        fetch("scraped_data_FINAL.json")
+          .then((response) => {
+            if (!response.ok) throw new Error("JSON file not found");
+            return response.json();
+          })
+          .then((data) => {
+            const container = document.querySelector(".blog-grid");
+
+            // --- NEW: Calculation Logic ---
+            let totalBlogs = 0;
+            let totalProducts = 0;
+            const productCategoryCounts = {}; // To store category counts
+
+            data.forEach((item) => {
+              // --- 1. Count types ---
+              if (item.type === "blog") {
+                totalBlogs++;
+              } else if (item.type === "product") {
+                totalProducts++;
+
+                // --- 2. Count products per category ---
+                const category = item.category || "uncategorized";
+                if (productCategoryCounts[category]) {
+                  productCategoryCounts[category]++;
+                } else {
+                  productCategoryCounts[category] = 1;
+                }
+              }
+
+              // --- Card creation (I fixed this section) ---
+              const card = document.createElement("div");
+              card.className = "blog-card";
+
+              const image =
+                item.featured_image_url ||
+                "https://placehold.co/600x400?text=No+Image";
+              const title = item.title || "Untitled";
+              const type = item.type || "misc"; // Fixed: Use item.type
+              const category = item.category || "uncategorized"; // Fixed: Use item.category
+              const url = item.url || "#";
+
+              // Applied fix to show both type and category
+              card.innerHTML = `
+                <img src="${image}" alt="${title}" class="blog-image" />
+                <div class="blog-content">
+                  <span class="blog-type">${type}</span>
+                  <span class="blog-category">${category}</span>
+                  <h2 class="blog-title">${title}</h2>
+                  <a href="${url}" target="_blank" class="blog-link">Read more →</a>
+                </div>
+              `;
+              container.appendChild(card);
+            });
+            // --- END of forEach loop ---
+
+            // --- NEW: Display Logic ---
+            const statsContainer = document.getElementById("stats-container");
+            const totalCategories = Object.keys(productCategoryCounts).length;
+
+            // Create the HTML for stats
+            let statsHTML = `
+              <h2>Scrape Summary</h2>
+              <p><strong>Total Blogs:</strong> ${totalBlogs}</p>
+              <p><strong>Total Products:</strong> ${totalProducts}</p>
+              <p><strong>Total Product Categories:</strong> ${totalCategories}</p>
+            `;
+
+            // Add the list of categories and their counts
+            if (totalCategories > 0) {
+              statsHTML += `<h3>Products per Category:</h3><ul>`;
+              // Sort categories alphabetically
+              for (const category of Object.keys(
+                productCategoryCounts
+              ).sort()) {
+                statsHTML += `<li><strong>${category}:</strong> ${productCategoryCounts[category]}</li>`;
+              }
+              statsHTML += `</ul>`;
+            }
+
+            // Set the HTML
+            statsContainer.innerHTML = statsHTML;
+          })
+          .catch((err) => {
+            console.error("Error loading JSON:", err);
+            document.getElementById(
+              "stats-container"
+            ).innerHTML = `<h2 style="color: red;">Error: Could not load scraped_data_FINAL.json</h2>
+               <p>Make sure the file is in the same directory as this HTML file.</p>`;
+          });
+      });
+    </script>
+  </body>
+</html>
