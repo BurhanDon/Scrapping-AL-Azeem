@@ -217,3 +217,4 @@ if __name__ == "__main__":
 
         print("\n--- Scraping Complete ---")
         save_to_json(all_blog_data, OUTPUT_FILE)
+        print("\n--- Final Complete ---")
